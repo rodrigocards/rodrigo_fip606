@@ -28,8 +28,8 @@ website:
         text: Teste de médias
         icon: check2-all
       - href: aula6.qmd
-        text: Analise?
-        icon: check2-all
+        text: Experimentos Fatoriais
+        icon: leaf
         
         
 format:

@@ -1,0 +1,342 @@
+---
+title: "Aula 6"
+format: html
+editor: visual
+---
+
+###Carregar o conjunto de dados
+
+```{r}
+library(tidyverse)
+library(readxl)
+
+
+fungicidas <- read_excel("dados_diversos.xlsx", "fungicida_vaso")
+
+fungicidas
+
+###Analisar os tipos de dados que tenho na tabela antes de qualquer coisa. Quais são discretos. Quais são contínuos??
+
+#Criar coluna incidencia = numero de sementes x severidade
+
+fungicidas2 <- fungicidas %>%
+  mutate(incidencia = inf_seeds / n_seeds )
+ 
+fungicidas2 
+
+```
+
+## Visualizaçãoo dos dados
+
+```{r}
+
+fungicidas %>% 
+  ggplot(aes(treat, severity))+
+  geom_point()
+### Nao da pra visualizar tao bem
+
+fungicidas %>% 
+  ggplot(aes(treat, severity))+
+  geom_jitter(width = 0.1)
+### Para melhorar colocamos cor
+fungicidas %>% 
+  mutate(dose = factor(dose)) %>% 
+  ggplot(aes(treat, severity, color = dose))+
+  geom_jitter(width = 0.1)
+  
+### Separar em dois paineis para melhorar a visualização e tirar a legenda 
+fungicidas %>% 
+  mutate(dose = factor(dose)) %>% 
+  ggplot(aes(treat, severity, color = dose))+
+  geom_jitter(width = 0.1)+
+  facet_wrap(~ dose)+
+  theme(legend.position = "none")
+
+### Para visualizar a interação
+fungicidas %>% 
+  mutate(dose = factor(dose)) %>% 
+  ggplot(aes(treat, severity, color = dose))+
+  geom_jitter(width = 0.1)+
+  facet_wrap(~ dose)+
+  theme(legend.position = "none")
+
+interaction.plot(fungicidas$treat,
+                 fungicidas$dose, fungicidas$severity)
+
+```
+
+## Modelo de análise
+
+```{r}
+
+m1 <- lm(severity ~ treat, data = fungicidas2 )
+anova(m1)
+
+###Segundo modelo severidade em funcao da dose 
+m2 <- lm(severity ~ dose, data = fungicidas2 )
+anova(m2)
+
+### Modelo para avaliar a interacao 
+m3 <- lm(severity ~ treat * dose, data = fungicidas2 )
+anova(m3)
+
+# Ver se o modelo ta bom
+library(DHARMa)
+plot(simulateResiduals(m3))
+
+library(emmeans)
+medias_m3 <- emmeans(m3, ~ treat | dose)
+
+medias_m3
+
+library(multcomp)
+cld(medias_m3)
+
+### agora quero ver se tem diferençao nas doses 
+library(emmeans)
+medias_m3 <- emmeans(m3, ~ dose | treat )
+
+medias_m3
+
+library(multcomp)
+cld(medias_m3)
+
+#### Se nao der interação vc faz graficos separados. Como nao é nosse caso, fazemos a tabela Fungxdose e usamos letras para indicar significancia e relacao. 
+
+
+
+```
+
+**Tabela 1.** Severidade média sob diferentes tratamentos e doses.
+
+| Tratamento       |  Dose 0.5  |  Dose 2.0  |
+|:-----------------|:----------:|:----------:|
+| **Ionic liquid** | 0,2921 A a | 0,0501 B a |
+| **Tebuconazole** | 0,0210 A b | 0,0202 A a |
+
+*Médias seguidas pela mesma letra, minúscula na vertical ou maiúscula na horizontal, não diferem entre si pelo teste de Tukey (p \> 0,05).*
+
+# Segunda parte da aula
+
+```{r}
+
+campo <- read_excel("dados_diversos.xlsx", "fungicida_campo")
+campo
+campo2 <- campo %>% 
+  mutate(trat = factor(TRAT),
+         bloco = factor(BLOCO)) %>% 
+  dplyr::select(trat, bloco, PROD) %>% 
+  rename(prod = PROD)
+
+campo2
+
+
+```
+
+### Visualização de dados
+
+```{r}
+campo2 %>%  
+ggplot(aes(trat, prod))+
+  geom_jitter(width = 0.05, alpha = 0.5)+
+  ylim(1500, 6000)+
+  stat_summary()+
+  theme_classic()+
+  labs(x = "Tratamento Fungicida",
+       y = "Produtividade (Kg/ha)")
+```
+
+## Modelo de anova
+
+```{r}
+m_bloco <- lm(prod ~ trat + bloco, data = campo2)
+plot(simulateResiduals(m_bloco))
+
+### Já que nao tem problema depois de plotar o gráfico, seguimos
+
+anova(m_bloco)
+
+###p-valor = 0.04 entao rejeitamos H0
+library(multcomp)
+library(emmeans)
+medias_m_bloco <- emmeans(m_bloco, ~ trat)
+cld(medias_m_bloco, Letters = LETTERS)
+
+```
+
+####NO Gemini Gerar um grafico de jitter de prod por trat com media e intervalo de confianca e as letras separando as ,edias trat emmean SE df lower.CL upper.CL .group 1 4219 201 21 3800 4638 A\
+2 4935 201 21 4516 5354 AB\
+8 5078 201 21 4659 5497 AB\
+3 5110 201 21 4691 5529 AB\
+5 5122 201 21 4703 5541 AB\
+7 5128 201 21 4709 5546 AB\
+4 5140 201 21 4722 5559 AB\
+6 5256 201 21 4838 5675 B
+
+```{r}
+# Carregamento das bibliotecas necessárias
+library(tidyverse)
+library(emmeans)
+library(multcomp)
+library(multcompView)
+library(DHARMa)
+
+# 1. Ajuste do Modelo (Blocos ao Acaso)
+m_bloco <- lm(prod ~ trat + bloco, data = campo2)
+
+# 2. Diagnóstico de Resíduos
+# É importante rodar isso antes de confiar na ANOVA
+plot(simulateResiduals(m_bloco))
+
+# 3. Tabela de ANOVA
+# Verifica se existe efeito significativo de tratamento e bloco
+anova(m_bloco)
+
+# 4. Médias Ajustadas e Teste de Tukey (Letras)
+medias_m_bloco <- emmeans(m_bloco, ~ trat)
+# O argumento correto é Letters (L maiúsculo)
+res_cld <- cld(medias_m_bloco, Letters = LETTERS) |> as.data.frame()
+
+# 5. Gráfico Final Arrumado
+# Unindo os dados brutos (jitter) com as médias e letras do modelo
+campo2 |>
+  ggplot(aes(x = trat, y = prod)) +
+  # Dados originais
+  geom_jitter(width = 0.05, alpha = 0.3, color = "gray40") +
+  # Médias e Intervalo de Confiança do modelo
+  geom_point(data = res_cld, aes(y = emmean), color = "red", size = 3) +
+  geom_errorbar(data = res_cld, 
+                aes(y = emmean, ymin = lower.CL, ymax = upper.CL), 
+                width = 0.1, color = "red") +
+  # Adicionando as letras de agrupamento
+  geom_text(data = res_cld, 
+            aes(y = upper.CL, label = .group), 
+            vjust = -1, size = 4, fontface = "bold") +
+  # Estética
+  ylim(1500, 7000) + # Aumentei um pouco o topo para a letra não cortar
+  theme_classic() +
+  labs(
+    x = "Tratamento fungicida",
+    y = "Produtividade (Kg/ha)",
+    title = "Produtividade por Tratamento",
+    subtitle = "Médias ajustadas com IC (95%) e letras de Tukey"
+  )
+```
+
+###Parte 3 da aula
+
+```{r}
+
+mofo <- read_excel("dados_diversos.xlsx", "mofo")
+mofo
+
+### objetivo aqui é ver a relacao entre as variaveis 
+###Visualizar 
+mofo %>% 
+  ggplot(aes(inc, yld))+
+  geom_point()+
+  geom_smooth(method = "lm", se = F)+
+  scale_color_binned( ~ study) ### para ver por estudo se realmente se vê a tendencia do todo 
+
+### onde se tem uma associacao mais forte?
+
+### Doença está relacionada a esclerodio???
+mofo %>% 
+  ggplot(aes(inc, scl))+
+  geom_point()+
+  geom_smooth(method = "lm", se = F)+
+  facet_wrap( ~ study) 
+
+### Coeficiente de correlação
+cor.test(mofo$inc, mofo$yld, method = "pearson")
+
+mofo %>% 
+  group_by(study) %>% 
+  summarise(correlacao = cor(inc, yld))
+
+mofo2 <- mofo %>% 
+  group_by(study) %>% 
+  summarise(correlacao = cor(inc, yld))
+
+summary(mofo2)
+mofo2 
+
+#### Gemini
+
+# Exemplo de como calcular se você ainda não tiver o df pronto:
+library(dplyr)
+
+correlacoes_df <- mofo %>%
+  group_by(study) %>%
+  summarize(r_value = cor(inc, yld, use = "complete.obs")) %>%
+  mutate(label = paste0("r = ", round(r_value, 2)))
+
+library(ggplot2)
+
+mofo %>% 
+  ggplot(aes(inc, yld)) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "lm", se = FALSE, color = "red") +
+  # Adicionando o texto da correlação
+  geom_text(data = correlacoes_df, 
+            aes(label = label), 
+            x = Inf, y = Inf,        # Posiciona no canto superior direito
+            hjust = 1.1, vjust = 1.5, # Ajusta o recuo para não encostar na borda
+            fontface = "italic",
+            inherit.aes = FALSE) +    # Importante para não dar erro com o aes global
+  facet_wrap(~ study) +
+  theme_minimal() +
+  labs(x = "Incidência (%)", 
+       y = "Produtividade (Yield)")
+
+
+
+hist(mofo$yld)
+hist(mofo$inc)
+hist(log(mofo$scl))
+
+```
+
+### Me perdi e pedi pro Gemini
+
+```{r}
+library(ggplot2)
+library(dplyr)
+
+# --- PASSO 1: Cálculos Fora do Gráfico ---
+# Cálculo por estudo
+mofo2 <- mofo %>% 
+  group_by(study) %>% 
+  summarise(r = cor(inc, scl, use = "complete.obs"))
+
+# Texto para o gráfico
+r_global <- cor(mofo$inc, mofo$scl, use = "complete.obs")
+label_r <- paste0("r global = ", round(r_global, 2))
+
+# --- PASSO 2: Gráfico Unificado ---
+# Garantimos que o dado principal é o 'mofo'
+ggplot(data = mofo, aes(x = inc, y = scl)) +
+  
+  # Pontos coloridos por estudo
+  geom_point(aes(color = factor(study)), alpha = 0.5) +
+  
+  # Reta Global (Preta)
+  geom_smooth(method = "lm", se = FALSE, color = "black", linetype = "dashed") +
+  
+  # Reta por Estudo (Coloridas)
+  geom_smooth(aes(color = factor(study)), method = "lm", se = FALSE, size = 0.5) +
+  
+  # Adicionando o texto do r global
+  annotate("label", x = Inf, y = Inf, label = label_r, 
+           hjust = 1.1, vjust = 1.5, fill = "white") +
+  
+  # Formatação
+  theme_classic() +
+  labs(x = "Incidência (%)", 
+       y = "scl",
+       color = "Estudo",
+       title = "Correlação Global e por Estudo")
+
+
+
+```
