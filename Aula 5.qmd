@@ -1,0 +1,323 @@
+---
+title: "Aula 5"
+format: html
+editor: visual
+---
+###carregar dados
+```{r}
+
+
+insetos <- InsectSprays
+library(tidyverse)
+insetos
+
+insetos %>% 
+  ggplot(aes(spray, count))+
+  geom_boxplot(outlier.colour = NA)+ 
+  geom_jitter()
+
+
+```
+
+
+### modelo ANOVA
+
+```{r}
+
+m1 <- lm(count ~ spray, data = insetos)
+m1
+summary(m1)
+anova(m1)
+
+hist(m1$residuals)
+shapiro.test(m1$residuals)
+bartlett.test(count ~ spray, data = insetos)
+
+
+
+library(performance)  ### Pacote que te da um resultado de visualização escrita 
+check_normality(m1)
+check_heteroscedasticity(m1)
+
+### perguntar ao gemini o que fazer em seguida já que check_normality(m1) e  check_heteroscedasticity(m1) deu negativo. 
+
+#### O que é um teste nao parametrico/ Quando usar???
+
+kruskal.test(count ~ spray, data = insetos)
+### p-valor muito peque então rejeitamos H0.
+
+library(DHARMa) ###Pacote que simula residuos 
+
+plot(simulateResiduals(m1))
+
+### de acordo com os graficos eu tenho que seguir com os testes nao parametricos. Preciso tranformar os dados(de contagem) - perguntar ao chat o que fazer.
+
+insetos$count
+
+insetos2 <- insetos %>% 
+  mutate(count2 = sqrt(count))
+
+m2 <- lm(count2 ~ spray, data = insetos2)
+m2
+summary(m2)
+anova(m2)
+
+hist(m2$residuals)
+shapiro.test(m2$residuals)
+bartlett.test(count ~ spray, data = insetos)
+
+library(performance)  ### Pacote que te da um resultado de visualização escrita 
+check_normality(m2)
+check_heteroscedasticity(m2)
+
+kruskal.test(count2 ~ spray, data = insetos2)
+### p-valor muito peque então rejeitamos H0.
+
+library(DHARMa) ###Pacote que simula residuos 
+
+plot(simulateResiduals(m2))
+
+library(emmeans)
+medias <- emmeans(m1, ~spray)
+medias
+
+### colocar no gemini como obter os valores destranformados no emmeans 
+
+##copiei e colei a parte de cima para alterar e usar o emmeans 
+
+insetos$count
+
+insetos2 <- insetos %>% 
+  mutate(count2 = sqrt(count))
+
+m2 <- lm(sqrt(count) ~ spray, data = insetos2)
+m2
+summary(m2)
+anova(m2)
+
+hist(m2$residuals)
+shapiro.test(m2$residuals)
+bartlett.test(count ~ spray, data = insetos)
+
+library(performance)  ### Pacote que te da um resultado de visualização escrita 
+check_normality(m2)
+check_heteroscedasticity(m2)
+
+kruskal.test(count2 ~ spray, data = insetos2)
+### p-valor muito peque então rejeitamos H0.
+
+library(DHARMa) ###Pacote que simula residuos 
+
+plot(simulateResiduals(m2))
+
+library(emmeans)
+medias <- emmeans(m1, ~spray)
+medias
+
+medias2 <- emmeans(m2, ~spray, type = "response")
+medias2
+
+
+library(multcomp)
+cld(medias2, Letters = LETTERS)
+
+library(agricolae)
+k <- kruskal(insetos$count, insetos$spray,
+             p.adj = "bon")
+k
+
+### terceira via GLM com a função de ligação
+### Modelo linear generalisado para dado de contagem usando Poisson
+
+m3 <- glm(count ~ spray, family = poisson(link = "log"), data = insetos)
+
+anova(m3)
+
+plot(simulateResiduals(m3))
+
+cld(emmeans(m3, ~ spray, type = "response"))
+
+### como o valor deu igual vc usa o glm pq é mais moderno, mais correto, mais elegante.
+
+df3 <- cld(emmeans(m3, ~ spray, type = "response"),
+           Letters = LETTERS)
+
+df3 %>% 
+  ggplot(aes(x = reorder(spray, -rate), y =rate, label = .group)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = asymp.LCL,
+                    ymax = asymp.UCL),
+                width = 0.1) +
+  geom_text(aes( y = asymp.UCL),
+                vjust = - 0.5,
+                size = 4) + 
+  ylim(0, 25)+
+  theme_classic()+
+  labs( x = "Insecticida",
+        y = "Insetos vivos (contagem)")+
+  coord_flip()
+
+
+
+```
+## Parte 2 da aula
+### Como montar um website.
+###Primeiro orgazine a aula 5. No Gemini: organize e comente o meu codigo quarto markdown. Quero um arquivo unico, sem separação, para download. 
+
+#### Versão do CHAT
+---
+title: "Aula 5 - ANOVA e Alternativas para Dados de Contagem"
+format: html
+editor: visual
+---
+
+```{r}
+# ================================
+# 1. Carregar dados e pacotes
+# ================================
+
+insetos <- InsectSprays
+
+library(tidyverse)
+library(performance)
+library(DHARMa)
+library(emmeans)
+library(multcomp)
+library(agricolae)
+
+# Visualização inicial
+insetos
+
+insetos %>% 
+  ggplot(aes(spray, count)) +
+  geom_boxplot(outlier.colour = NA) + 
+  geom_jitter(width = 0.2)
+
+
+# ================================
+# 2. ANOVA (modelo linear)
+# ================================
+
+m1 <- lm(count ~ spray, data = insetos)
+
+summary(m1)
+anova(m1)
+
+# Diagnóstico
+hist(m1$residuals)
+shapiro.test(m1$residuals)
+bartlett.test(count ~ spray, data = insetos)
+
+check_normality(m1)
+check_heteroscedasticity(m1)
+
+plot(simulateResiduals(m1))
+
+# Se pressupostos não forem atendidos → alternativas
+
+
+# ================================
+# 3. Teste não paramétrico
+# ================================
+
+kruskal.test(count ~ spray, data = insetos)
+# p-valor pequeno → rejeita H0
+
+
+# ================================
+# 4. Transformação (raiz quadrada)
+# ================================
+
+insetos2 <- insetos %>% 
+  mutate(count2 = sqrt(count))
+
+m2 <- lm(count2 ~ spray, data = insetos2)
+
+summary(m2)
+anova(m2)
+
+# Diagnóstico pós-transformação
+hist(m2$residuals)
+shapiro.test(m2$residuals)
+bartlett.test(count2 ~ spray, data = insetos2)
+
+check_normality(m2)
+check_heteroscedasticity(m2)
+
+plot(simulateResiduals(m2))
+
+
+# ================================
+# 5. Comparação de médias
+# ================================
+
+medias1 <- emmeans(m1, ~ spray)
+
+# Transformado (voltando para escala original)
+medias2 <- emmeans(m2, ~ spray, type = "response")
+medias2
+
+cld(medias2, Letters = LETTERS)
+
+
+# ================================
+# 6. Pós-teste não paramétrico
+# ================================
+
+k <- kruskal(insetos$count, insetos$spray, p.adj = "bon")
+k
+
+
+# ================================
+# 7. GLM (Poisson) → melhor abordagem
+# ================================
+
+m3 <- glm(count ~ spray, 
+          family = poisson(link = "log"), 
+          data = insetos)
+
+anova(m3)
+
+plot(simulateResiduals(m3))
+
+
+# ================================
+# 8. Médias no GLM
+# ================================
+
+df3 <- cld(emmeans(m3, ~ spray, type = "response"),
+           Letters = LETTERS)
+
+df3
+
+
+# ================================
+# 9. Gráfico final
+# ================================
+
+df3 %>% 
+  ggplot(aes(x = reorder(spray, -rate), 
+             y = rate, 
+             label = .group)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = asymp.LCL,
+                    ymax = asymp.UCL),
+                width = 0.1) +
+  geom_text(aes(y = asymp.UCL),
+            vjust = -0.5,
+            size = 4) + 
+  ylim(0, 25) +
+  theme_classic() +
+  labs(x = "Insecticida",
+       y = "Insetos vivos (contagem)") +
+  coord_flip()
+
+
+# ================================
+# CONCLUSÃO (comentário no código)
+# ================================
+
+# - ANOVA violou pressupostos
+# - Transformação ajudou parcialmente
+# - Kruskal confirmou diferenças
+# - GLM Poisson é o modelo mais adequado para dados de contagem

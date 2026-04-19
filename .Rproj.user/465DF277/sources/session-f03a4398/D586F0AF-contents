@@ -7,12 +7,33 @@ cache: true
 
 website:
   title: "FIP606"
-  navbar:
+theme: cosmo
+css: style.css
+navbar:
     left:
       - href: index.qmd
         text: Home
-      - Favorites.qmd
-
+        icon: house
+      - href: aula1.qmd
+        text: Introdução
+        icon: info-circle
+      - href: aula2.qmd
+        text: Gráficos 
+        icon: bar-chart
+      - href: aula3.qmd
+        text: Teste t
+        icon: plus-slash-minus
+      - href: aula4.qmd
+        text: Anova
+        icon: layers-half
+      - href: aula5.qmd
+        text: Teste de médias
+        icon: check2-all
+      - href: aula6.qmd
+        text: Analise?
+        icon: check2-all
+        
+        
 format:
   html:
     theme:

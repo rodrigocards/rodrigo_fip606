@@ -1,0 +1,75 @@
+---
+title: "aula 1"
+format: html
+editor: visual
+---
+
+## Aula 1
+
+Apresentação da **disciplina** e *conceitos* em experimentos.
+
+```{r}
+a <- 2
+b <- 2
+a + b
+
+```
+
+## Dados Exercício
+
+Experimento em casa de vegetação: Efeito do fungicida na severidade da doença\
+
+| Planta | Tratamento | Severidade da D. (%) |
+|--------|------------|----------------------|
+| 1      | Controle   | 42                   |
+| 2      | Controle   | 38                   |
+| 3      | Controle   | 45                   |
+| 4      | Controle   | 40                   |
+| 5      | Fungicida  | 12                   |
+| 6      | Fungicida  | 18                   |
+| 7      | Fungicida  | 15                   |
+| 8      | Fungicida  | 10                   |
+
+## Instalação de pacotes
+
+Instalar somente uma vez e carregar toda vez que for utilizar
+
+```{r}
+#Carregar o tidyverse 
+library(tidyverse)
+library(car)
+library(agricolae)
+data("disease")
+
+```
+
+```{r}
+Planta <- c(1,2,3,4,5,6,7,8)
+planta <- seq(1:8)
+tratamento <- c("controle", "controle", "controle", "controle", "fungicida", "fungicida", "fungicida", "fungicida")
+severidade <- c(42, 38, 45, 40, 12, 18, 15, 10)
+dados <- data_frame(planta, tratamento,severidade)
+
+```
+
+## Visualização de dados
+
+```{r}
+library(ggplot2)
+ggplot(dados, aes(tratamento,severidade)) + geom_point(color="navy",size= 3) + ylim(0, 50) + theme_classic()
+```
+
+## Teste Estastístico
+
+```{r}
+resultado_teste <- t.test(severidade ~ tratamento, data = dados, var.eaqul= TRUE)
+```
+
+```{r}
+# Realizando o Teste t (Independente)
+# Severidade explicada pelo Tratamento (y ~ x)
+resultado_teste <- t.test(severidade ~ tratamento, data = dados, var.equal = TRUE)
+
+# Exibir o resultado detalhado
+print(resultado_teste)
+```
