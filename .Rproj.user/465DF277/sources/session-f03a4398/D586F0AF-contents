@@ -1,16 +1,17 @@
 project:
   type: website
+  output-dir: docs
  
 cache: true
 
 
 website:
-  title: "rodrigo_fip606"
+  title: "FIP606"
   navbar:
     left:
       - href: index.qmd
         text: Home
-      - about.qmd
+      - Favorites.qmd
 
 format:
   html:
