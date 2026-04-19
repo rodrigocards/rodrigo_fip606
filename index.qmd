@@ -2,7 +2,7 @@
 title: "FIP606"
 image: "fip606.png"
 about:
-  template: trestles
+  template: jolla
   image-shape: round
   image-width: 25em
   links:
