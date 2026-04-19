@@ -35,8 +35,13 @@ website:
 format:
   html:
     theme:
-      - cosmo
+      - sandstone 
       - brand
+    mainfont: times new roman
+    fontsiza: 1.Srem
+    fontcolor: "#224573"
+    linkcolor: "#6B4F4F"
+    monofont: courier new
     css: styles.css
     toc: true
 
